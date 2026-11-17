@@ -11,7 +11,7 @@
 <title>Now Playing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
   --c1:#3b2f5c; --c2:#7a4e6e; --c3:#2c4a5a; --base:#0c0b10;
@@ -44,7 +44,10 @@ body.paused .blob{animation-play-state:paused;opacity:.45}
 /* ---------- layout ---------- */
 main{position:relative;z-index:2;height:100%;
   padding:max(28px,env(safe-area-inset-top)) max(36px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(36px,env(safe-area-inset-left));
-  display:grid;grid-template-rows:1fr}
+  display:grid;grid-template-rows:auto 1fr}
+#clock{display:flex;align-items:baseline;gap:14px;color:var(--mute)}
+#time{font:400 34px/1 "Instrument Serif",serif;color:var(--ink);letter-spacing:.01em}
+#date{font-size:14px}
 
 #player{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;
   gap:clamp(32px,5vw,72px);max-width:1200px;width:100%;margin:auto}
@@ -56,21 +59,21 @@ body.paused #art{filter:saturate(.45) brightness(.8);animation-play-state:paused
 @keyframes float{50%{transform:translateY(-8px)}}
 
 #meta{display:flex;flex-direction:column;gap:10px}
-#state{font-size:12px;font-weight:400;letter-spacing:.08em;color:var(--faint);height:16px;transition:opacity .6s}
-#title{font:300 clamp(30px,4vw,56px)/1.1 "Inter Tight",sans-serif;letter-spacing:-.025em;text-wrap:balance;
+#state{font-size:14px;color:var(--faint);height:18px;transition:opacity .6s}
+#title{font:400 clamp(38px,5.4vw,76px)/1.02 "Instrument Serif",serif;text-wrap:balance;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-#artist{font-size:clamp(16px,1.5vw,20px);font-weight:400;color:var(--ink);opacity:.8}
-#album{font-size:clamp(14px,1.2vw,16px);font-weight:300;color:var(--mute)}
+#artist{font-size:clamp(18px,1.8vw,24px);color:var(--ink);opacity:.86}
+#album{font-size:15px;color:var(--mute);font-style:italic;font-family:"Instrument Serif",serif;font-size:19px}
 #prog{margin-top:22px;max-width:520px}
 #bar{height:3px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
 #fill{height:100%;width:0;background:var(--ink);opacity:.85;transition:width 1s linear}
-#times{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;font-weight:300;color:var(--faint);font-variant-numeric:tabular-nums}
+#times{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums}
 .swap{transition:opacity .9s ease}
 .out{opacity:0}
 
 #idle{display:none;margin:auto;text-align:center}
-#idle p:first-child{font:200 clamp(32px,4.5vw,60px)/1.1 "Inter Tight",sans-serif;letter-spacing:-.025em}
-#idle p:last-child{margin-top:14px;font-weight:300;color:var(--mute)}
+#idle p:first-child{font:italic 400 clamp(40px,6vw,80px)/1 "Instrument Serif",serif}
+#idle p:last-child{margin-top:14px;color:var(--mute)}
 body.idle #player{display:none} body.idle #idle{display:block}
 
 @media (orientation:portrait),(max-width:700px){
@@ -84,7 +87,7 @@ body.idle #player{display:none} body.idle #idle{display:block}
   background:rgba(12,11,16,.55);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
   border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:32px;-webkit-user-select:text;user-select:text}
 body.setup #setup{display:block} body.setup #player,body.setup #idle{display:none}
-#setup h1{font:300 32px/1.1 "Inter Tight",sans-serif;letter-spacing:-.02em;margin-bottom:8px}
+#setup h1{font:400 40px/1.05 "Instrument Serif",serif;margin-bottom:8px}
 #setup p,#setup li{color:var(--mute);font-size:15px}
 #setup ol{padding-left:20px;margin:16px 0;display:grid;gap:6px}
 #setup b{color:var(--ink);font-weight:500}
@@ -112,13 +115,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-of
 <div id="grain"></div><div id="vig"></div>
 
 <main>
+  <div id="clock"><span id="time">--:--</span><span id="date"></span></div>
+
   <section id="player">
     <div id="art"><img id="imgA" alt=""><img id="imgB" alt="" style="opacity:0"></div>
     <div id="meta">
       <div id="state"></div>
       <div class="swap" id="txt">
         <h1 id="title"></h1>
-        <div id="artist" style="margin-top:16px"></div>
+        <div id="artist" style="margin-top:14px"></div>
         <div id="album" style="margin-top:4px"></div>
       </div>
       <div id="prog"><div id="bar"><div id="fill"></div></div>
@@ -159,6 +164,14 @@ const store = {
 };
 const REDIRECT = location.origin + location.pathname;
 const SCOPES = 'user-read-currently-playing user-read-playback-state';
+
+/* ---------- clock ---------- */
+function tick(){
+  const d = new Date();
+  $('time').textContent = d.toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+  $('date').textContent = d.toLocaleDateString('de-AT',{weekday:'long',day:'numeric',month:'long'});
+}
+tick(); setInterval(tick, 10000);
 
 /* ---------- wake lock ---------- */
 let lock = null;
