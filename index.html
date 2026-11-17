@@ -11,7 +11,7 @@
 <title>Now Playing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
   --c1:#3b2f5c; --c2:#7a4e6e; --c3:#2c4a5a; --base:#0c0b10;
@@ -44,36 +44,60 @@ body.paused .blob{animation-play-state:paused;opacity:.45}
 /* ---------- layout ---------- */
 main{position:relative;z-index:2;height:100%;
   padding:max(28px,env(safe-area-inset-top)) max(36px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(36px,env(safe-area-inset-left));
-  display:grid;grid-template-rows:auto 1fr}
-#clock{display:flex;align-items:baseline;gap:14px;color:var(--mute)}
-#time{font:400 34px/1 "Instrument Serif",serif;color:var(--ink);letter-spacing:.01em}
-#date{font-size:14px}
+  display:grid;grid-template-rows:1fr}
 
 #player{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;
   gap:clamp(32px,5vw,72px);max-width:1200px;width:100%;margin:auto}
-#art{position:relative;width:min(40vw,64vh);aspect-ratio:1;border-radius:14px;overflow:hidden;
+/* cover / vinyl: tap the art to switch */
+#art{position:relative;width:min(40vw,64vh);aspect-ratio:1;border-radius:14px;cursor:pointer;
   box-shadow:0 40px 80px -20px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);
-  animation:float 9s ease-in-out infinite;background:rgba(255,255,255,.04);transition:filter 1.2s}
+  animation:float 9s ease-in-out infinite;transition:filter 1.2s,border-radius .8s}
 body.paused #art{filter:saturate(.45) brightness(.8);animation-play-state:paused}
-#art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 1.2s ease}
+#disc{position:absolute;inset:0;border-radius:inherit;overflow:hidden;will-change:transform}
+#label{position:absolute;inset:0;border-radius:inherit;overflow:hidden;background:rgba(255,255,255,.04);
+  transition:inset .8s ease,border-radius .8s}
+#label img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 1.2s ease}
+#sheen{position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;transition:opacity .8s}
 @keyframes float{50%{transform:translateY(-8px)}}
 
+html[data-vinyl] #art{border-radius:50%;box-shadow:0 40px 80px -20px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05)}
+html[data-vinyl] #disc{background:
+  radial-gradient(circle,transparent 35%,rgba(255,255,255,.035) 35.4%,transparent 36.2%),
+  repeating-radial-gradient(circle,#111 0 1.2px,#1b1b1e 1.6px 2.4px),#141416}
+html[data-vinyl] #label{inset:30%;border-radius:50%}
+html[data-vinyl] #label::after{content:"";position:absolute;left:50%;top:50%;width:9%;height:9%;
+  transform:translate(-50%,-50%);border-radius:50%;background:#0b0b0d;box-shadow:inset 0 1px 2px rgba(0,0,0,.8)}
+html[data-vinyl] #sheen{opacity:1;mix-blend-mode:screen;
+  background:conic-gradient(from 30deg,transparent 0deg,rgba(255,255,255,.10) 25deg,transparent 60deg,transparent 180deg,rgba(255,255,255,.07) 210deg,transparent 245deg)}
+
+/* weather + time-of-day layers */
+#wx{position:fixed;inset:0;z-index:1;pointer-events:none;width:100%;height:100%}
+#mood{position:fixed;inset:0;z-index:5;pointer-events:none;opacity:0;transition:opacity 90s linear,background 90s linear}
+html[data-mood=morgen] #mood{opacity:1;background:rgba(255,170,90,.06);mix-blend-mode:soft-light}
+html[data-mood=abend] #mood{opacity:1;background:rgba(70,28,0,.38);mix-blend-mode:multiply}
+html[data-mood=nacht] #mood{opacity:1;background:rgba(0,0,0,.58)}
+#meta{transition:opacity 2s ease}
+html[data-mood=nacht]:not([data-peek]) #meta{opacity:0}
+html[data-mood=nacht] .blob{opacity:.35}
+body.setup #mood{display:none}
+main{transition:transform 30s ease-in-out}
+
 #meta{display:flex;flex-direction:column;gap:10px}
-#state{font-size:14px;color:var(--faint);height:18px;transition:opacity .6s}
-#title{font:400 clamp(38px,5.4vw,76px)/1.02 "Instrument Serif",serif;text-wrap:balance;
+#state{font-size:12px;font-weight:400;letter-spacing:.08em;color:var(--faint);height:16px;transition:opacity .6s}
+#title{font:300 clamp(30px,4vw,56px)/1.1 "Inter Tight",sans-serif;letter-spacing:-.025em;text-wrap:balance;
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-#artist{font-size:clamp(18px,1.8vw,24px);color:var(--ink);opacity:.86}
-#album{font-size:15px;color:var(--mute);font-style:italic;font-family:"Instrument Serif",serif;font-size:19px}
+#artist{font-size:clamp(16px,1.5vw,20px);font-weight:400;color:var(--ink);opacity:.8}
+#album{font-size:clamp(14px,1.2vw,16px);font-weight:300;color:var(--mute)}
 #prog{margin-top:22px;max-width:520px}
 #bar{height:3px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
 #fill{height:100%;width:0;background:var(--ink);opacity:.85;transition:width 1s linear}
-#times{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums}
+#times{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;font-weight:300;color:var(--faint);font-variant-numeric:tabular-nums}
 .swap{transition:opacity .9s ease}
 .out{opacity:0}
 
 #idle{display:none;margin:auto;text-align:center}
-#idle p:first-child{font:italic 400 clamp(40px,6vw,80px)/1 "Instrument Serif",serif}
-#idle p:last-child{margin-top:14px;color:var(--mute)}
+#idle p:first-child{font:200 clamp(32px,4.5vw,60px)/1.1 "Inter Tight",sans-serif;letter-spacing:-.025em}
+#idle p:last-child{margin-top:14px;font-weight:300;color:var(--mute)}
 body.idle #player{display:none} body.idle #idle{display:block}
 
 @media (orientation:portrait),(max-width:700px){
@@ -87,7 +111,7 @@ body.idle #player{display:none} body.idle #idle{display:block}
   background:rgba(12,11,16,.55);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
   border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:32px;-webkit-user-select:text;user-select:text}
 body.setup #setup{display:block} body.setup #player,body.setup #idle{display:none}
-#setup h1{font:400 40px/1.05 "Instrument Serif",serif;margin-bottom:8px}
+#setup h1{font:300 32px/1.1 "Inter Tight",sans-serif;letter-spacing:-.02em;margin-bottom:8px}
 #setup p,#setup li{color:var(--mute);font-size:15px}
 #setup ol{padding-left:20px;margin:16px 0;display:grid;gap:6px}
 #setup b{color:var(--ink);font-weight:500}
@@ -107,23 +131,25 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-of
 #hint{position:fixed;z-index:4;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);
   font-size:13px;color:var(--faint);transition:opacity 1s}
 
-@media (prefers-reduced-motion:reduce){.blob,#art,#grain{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.blob,#art,#grain{animation:none!important}#wx{display:none}}
 </style>
 </head>
 <body class="idle">
 <div id="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div></div>
-<div id="grain"></div><div id="vig"></div>
+<canvas id="wx"></canvas>
+<div id="grain"></div><div id="vig"></div><div id="mood"></div>
 
 <main>
-  <div id="clock"><span id="time">--:--</span><span id="date"></span></div>
-
   <section id="player">
-    <div id="art"><img id="imgA" alt=""><img id="imgB" alt="" style="opacity:0"></div>
+    <div id="art" title="Tippen: Cover / Vinyl">
+      <div id="disc"><div id="label"><img id="imgA" alt=""><img id="imgB" alt="" style="opacity:0"></div></div>
+      <div id="sheen"></div>
+    </div>
     <div id="meta">
       <div id="state"></div>
       <div class="swap" id="txt">
         <h1 id="title"></h1>
-        <div id="artist" style="margin-top:14px"></div>
+        <div id="artist" style="margin-top:16px"></div>
         <div id="album" style="margin-top:4px"></div>
       </div>
       <div id="prog"><div id="bar"><div id="fill"></div></div>
@@ -164,14 +190,6 @@ const store = {
 };
 const REDIRECT = location.origin + location.pathname;
 const SCOPES = 'user-read-currently-playing user-read-playback-state';
-
-/* ---------- clock ---------- */
-function tick(){
-  const d = new Date();
-  $('time').textContent = d.toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
-  $('date').textContent = d.toLocaleDateString('de-AT',{weekday:'long',day:'numeric',month:'long'});
-}
-tick(); setInterval(tick, 10000);
 
 /* ---------- wake lock ---------- */
 let lock = null;
@@ -329,6 +347,115 @@ async function poll(){
   }
   timer = setTimeout(poll, wait);
 }
+
+/* ---------- vinyl mode (tap the cover) ---------- */
+const root = document.documentElement, disc = $('disc');
+const isVinyl = () => root.hasAttribute('data-vinyl');
+if(store.get('vinyl')==='1') root.dataset.vinyl = '';
+let ang = 0, spd = 0, lastS = performance.now();
+$('art').addEventListener('click', () => {
+  if(isVinyl()){
+    delete root.dataset.vinyl; store.set('vinyl','0');
+    disc.style.transition = 'transform .8s ease'; setTimeout(()=>disc.style.transition='', 900);
+    ang = 0; spd = 0;
+  } else { root.dataset.vinyl = ''; store.set('vinyl','1'); }
+});
+const SECONDS_PER_TURN = 7;                  // slow lo-fi spin
+function spin(now){
+  const dt = Math.min(.1,(now-lastS)/1000); lastS = now;
+  if(isVinyl()){
+    const target = (cur.playing && document.body.className==='') ? 1 : 0;
+    spd += (target-spd) * (1-Math.exp(-dt/(target>spd ? .7 : 1.8)));   // spins up quickly, runs out gently
+    if(target===0 && spd<.002) spd = 0;
+    ang = (ang + spd*360/SECONDS_PER_TURN*dt) % 360;
+    disc.style.transform = `rotate(${ang}deg)`;
+  } else if(disc.style.transform && !disc.style.transition) disc.style.transform = '';
+  else if(disc.style.transition) disc.style.transform = 'rotate(0deg)';
+  requestAnimationFrame(spin);
+}
+requestAnimationFrame(spin);
+
+/* ---------- burn-in protection: drift a few pixels ---------- */
+const mainEl = document.querySelector('main');
+function shift(){ const r = () => Math.round((Math.random()*2-1)*8); mainEl.style.transform = `translate(${r()}px,${r()}px)`; }
+shift(); setInterval(shift, 90000);
+
+/* ---------- time-of-day mood ----------
+   test with #morgen, #tag, #abend or #nacht at the end of the address */
+const HASH = location.hash.slice(1).toLowerCase();
+addEventListener('hashchange', () => location.reload());
+function mood(){
+  const forced = ['morgen','tag','abend','nacht'].find(m => HASH.includes(m));
+  const h = new Date().getHours();
+  root.dataset.mood = forced || (h>=6&&h<9 ? 'morgen' : h<18&&h>=9 ? 'tag' : h>=18&&h<22 ? 'abend' : 'nacht');
+}
+$('mood').style.transition = 'none'; mood();
+requestAnimationFrame(()=>requestAnimationFrame(()=>$('mood').style.transition=''));
+setInterval(mood, 60000);
+let peekT;                                   // at night a tap shows the song for 10 s
+document.addEventListener('click', () => {
+  if(root.dataset.mood!=='nacht') return;
+  root.dataset.peek = ''; clearTimeout(peekT); peekT = setTimeout(()=>delete root.dataset.peek, 10000);
+});
+
+/* ---------- live weather (Open-Meteo, free, no key) ----------
+   test with #regen, #schnee, #gewitter or #klar */
+const LAT = 47.07, LON = 15.44;              // Graz area – change to your own coordinates if you like
+let wx = {kind:'clear', amount:0};
+async function weather(){
+  const forced = ['regen','schnee','gewitter','klar'].find(m => HASH.includes(m));
+  if(forced){ wx = {regen:{kind:'rain',amount:.6},schnee:{kind:'snow',amount:.7},gewitter:{kind:'rain',amount:1},klar:{kind:'clear',amount:0}}[forced]; return; }
+  try{
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=weather_code`);
+    const w = (await r.json()).current.weather_code;
+    if([71,73,75,77,85,86].includes(w)) wx = {kind:'snow', amount: w===75||w===86 ? 1 : w===71||w===77 ? .4 : .7};
+    else if((w>=51&&w<=67)||(w>=80&&w<=82)||w>=95) wx = {kind:'rain', amount: w>=95||w===65||w===67||w===82 ? 1 : w<=57 ? .3 : .6};
+    else wx = {kind:'clear', amount:0};
+  }catch(e){}                                // no weather → just no effect
+}
+weather(); setInterval(weather, 15*60000);
+
+const cv = $('wx'), cx = cv.getContext('2d');
+let W = 0, H = 0, streaks = [], drops = [], flakes = [], lastW = performance.now();
+function size(){ const d = Math.min(2, devicePixelRatio||1); W = innerWidth; H = innerHeight; cv.width = W*d; cv.height = H*d; cx.setTransform(d,0,0,d,0,0); }
+addEventListener('resize', size); size();
+const rnd = (a,b) => a + Math.random()*(b-a);
+const newStreak = () => ({x:rnd(-60,W), y:rnd(-H,0), l:rnd(14,34), v:rnd(700,1100)});
+const newDrop = y => ({x:rnd(0,W), y: y ?? rnd(0,H), r:rnd(1.5,4.5), v:0, still:rnd(2,16)});
+const newFlake = y => ({x:rnd(0,W), y: y ?? rnd(-20,H), r:rnd(1,3.2), v:rnd(18,45), ph:rnd(0,6.28), sw:rnd(10,30)});
+function fit(arr, n, make){ while(arr.length<n) arr.push(make()); arr.length = Math.min(arr.length, n); }
+let wasClear = false;
+function frame(now){
+  const dt = Math.min(.05,(now-lastW)/1000); lastW = now;
+  const a = wx.amount, area = W*H/1e6;
+  if(wx.kind==='clear'){ if(!wasClear){ cx.clearRect(0,0,W,H); streaks.length = drops.length = flakes.length = 0; wasClear = true; } requestAnimationFrame(frame); return; }
+  wasClear = false; cx.clearRect(0,0,W,H);
+  if(wx.kind==='rain'){
+    flakes.length = 0; fit(streaks, Math.round(90*a*area), newStreak); fit(drops, Math.round(70*a*area), () => newDrop());
+    cx.strokeStyle = 'rgba(220,230,255,.13)'; cx.lineWidth = 1; cx.beginPath();
+    for(const s of streaks){
+      s.y += s.v*dt; s.x += s.v*dt*.12; if(s.y>H+40) Object.assign(s, newStreak());
+      cx.moveTo(s.x, s.y); cx.lineTo(s.x-s.l*.12, s.y-s.l);
+    }
+    cx.stroke();
+    for(const d of drops){                   // drops on the glass: sit a while, then run down
+      if(d.still>0) d.still -= dt; else { d.v = Math.min(d.v+dt*220, 160+d.r*30); d.y += d.v*dt; d.x += Math.sin(d.y*.05)*.2; }
+      if(d.y>H+10) Object.assign(d, newDrop(rnd(-10,H*.6)));
+      if(d.v>0){ cx.strokeStyle = 'rgba(255,255,255,.05)'; cx.lineWidth = d.r*.9; cx.beginPath(); cx.moveTo(d.x,d.y); cx.lineTo(d.x, d.y-Math.min(80,d.v*.4)); cx.stroke(); }
+      const g = cx.createRadialGradient(d.x-d.r*.3, d.y-d.r*.3, 0, d.x, d.y, d.r);
+      g.addColorStop(0,'rgba(255,255,255,.35)'); g.addColorStop(.6,'rgba(255,255,255,.08)'); g.addColorStop(1,'rgba(255,255,255,.18)');
+      cx.fillStyle = g; cx.beginPath(); cx.arc(d.x, d.y, d.r, 0, 6.283); cx.fill();
+    }
+  } else {
+    streaks.length = drops.length = 0; fit(flakes, Math.round(140*a*area), () => newFlake());
+    for(const f of flakes){
+      f.y += f.v*dt; f.ph += dt*.8; if(f.y>H+5) Object.assign(f, newFlake(-5));
+      cx.fillStyle = `rgba(255,255,255,${.25+f.r*.12})`; cx.beginPath(); cx.arc(f.x+Math.sin(f.ph)*f.sw, f.y, f.r, 0, 6.283); cx.fill();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(frame);
 
 (async()=>{
   if(!(await handleCallback())) return;

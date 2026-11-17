@@ -1,13 +1,17 @@
 # Now Playing
 
 Ein ruhiges Lo-Fi-Display für Spotify, gedacht fürs iPad am Schreibtisch.
-Großes Cover, langsam treibende Farbflächen in den Farben des Albums, leichtes Filmkorn, Uhrzeit und Datum.
+Großes Cover, langsam treibende Farbflächen in den Farben des Albums, leichtes Filmkorn und schlichte Typografie.
 
 Die Seite zeigt automatisch, was gerade auf deinem Spotify-Account läuft – egal ob am PC, Handy oder iPad.
 
 ## Features
 
 - Hintergrundfarben werden live aus dem Album-Cover berechnet
+- **Vinyl-Modus:** Cover antippen → wird zur Schallplatte, die sich dreht und beim Pausieren sanft ausläuft (Einstellung wird gemerkt)
+- **Live-Wetter** über [Open-Meteo](https://open-meteo.com) (gratis, ohne Key): Regentropfen an der Scheibe, Schnee rieselt, bei Gewitter stärker. Standort: Raum Graz, änderbar über `LAT`/`LON` im Code
+- **Tageszeit-Stimmung:** morgens leicht warm, abends dunkler und wärmer, nachts nur noch gedimmtes Cover (Tippen zeigt den Song kurz an)
+- **Einbrenn-Schutz:** der Inhalt wandert alle 90 Sekunden unmerklich um ein paar Pixel
 - Sanfte Übergänge beim Songwechsel, Fortschrittsleiste, Pausen- und Leerlauf-Zustand
 - Hält den Bildschirm wach (Screen Wake Lock, nach einmaligem Tippen)
 - Quer- und Hochformat, randlos als Home-Bildschirm-App
@@ -42,12 +46,16 @@ https://robynumberone.github.io/nowplaying/
 
 Tipp: Unter Einstellungen → Anzeige & Helligkeit die automatische Sperre auf „Nie“ stellen, falls der Wake Lock nicht greift.
 
+## Testen
+
+Hinten an die Adresse anhängen, um Wetter oder Tageszeit zu erzwingen, z. B. `#regen`, `#schnee`, `#gewitter`, `#klar`, `#morgen`, `#tag`, `#abend`, `#nacht` – kombinierbar: `#schnee-nacht`.
+
 ## Sicherheit
 
 - Login über das offizielle **Authorization Code Flow mit PKCE** – kein Client Secret im Code
 - Nur Leserechte: `user-read-currently-playing`, `user-read-playback-state`
 - Tokens liegen ausschließlich im lokalen Speicher des Browsers auf dem Gerät
-- Die Seite kommuniziert nur mit `accounts.spotify.com`, `api.spotify.com` und Google Fonts
+- Die Seite kommuniziert nur mit `accounts.spotify.com`, `api.spotify.com`, `api.open-meteo.com` (nur grobe Koordinaten, keine Account-Daten) und Google Fonts
 - Zugriff jederzeit widerrufbar unter spotify.com → Konto → Apps verwalten
 
 ## Technik
