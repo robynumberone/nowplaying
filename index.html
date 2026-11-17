@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Now Playing">
+<meta name="theme-color" content="#0c0b10">
+<title>Now Playing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c1:#3b2f5c; --c2:#7a4e6e; --c3:#2c4a5a; --base:#0c0b10;
+  --ink:#f3efe8; --mute:rgba(243,239,232,.62); --faint:rgba(243,239,232,.32);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--base);color:var(--ink);overflow:hidden;
+  font:400 16px/1.4 "Inter Tight",system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+
+/* ---------- ambient background ---------- */
+#bg{position:fixed;inset:-20%;z-index:0;background:var(--base);transition:background 3s ease}
+.blob{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.75;
+  transition:background 3s ease;will-change:transform}
+.b1{background:var(--c1);top:5%;left:0;animation:d1 46s ease-in-out infinite alternate}
+.b2{background:var(--c2);top:35%;left:45%;animation:d2 58s ease-in-out infinite alternate}
+.b3{background:var(--c3);top:-10%;left:50%;animation:d3 52s ease-in-out infinite alternate}
+.b4{background:var(--c1);top:55%;left:5%;width:45vmax;height:45vmax;opacity:.5;animation:d2 64s ease-in-out infinite alternate-reverse}
+@keyframes d1{to{transform:translate(18vw,14vh) scale(1.15)}}
+@keyframes d2{to{transform:translate(-20vw,-12vh) scale(.9)}}
+@keyframes d3{to{transform:translate(-10vw,22vh) scale(1.2)}}
+body.paused .blob{animation-play-state:paused;opacity:.45}
+#grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.13;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 1.2s steps(4) infinite}
+@keyframes grain{25%{transform:translate(-2%,1%)}50%{transform:translate(1%,-2%)}75%{transform:translate(2%,2%)}}
+#vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.55) 100%)}
+
+/* ---------- layout ---------- */
+main{position:relative;z-index:2;height:100%;
+  padding:max(28px,env(safe-area-inset-top)) max(36px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(36px,env(safe-area-inset-left));
+  display:grid;grid-template-rows:auto 1fr}
+#clock{display:flex;align-items:baseline;gap:14px;color:var(--mute)}
+#time{font:400 34px/1 "Instrument Serif",serif;color:var(--ink);letter-spacing:.01em}
+#date{font-size:14px}
+
+#player{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;
+  gap:clamp(32px,5vw,72px);max-width:1200px;width:100%;margin:auto}
+#art{position:relative;width:min(40vw,64vh);aspect-ratio:1;border-radius:14px;overflow:hidden;
+  box-shadow:0 40px 80px -20px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);
+  animation:float 9s ease-in-out infinite;background:rgba(255,255,255,.04);transition:filter 1.2s}
+body.paused #art{filter:saturate(.45) brightness(.8);animation-play-state:paused}
+#art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity 1.2s ease}
+@keyframes float{50%{transform:translateY(-8px)}}
+
+#meta{display:flex;flex-direction:column;gap:10px}
+#state{font-size:14px;color:var(--faint);height:18px;transition:opacity .6s}
+#title{font:400 clamp(38px,5.4vw,76px)/1.02 "Instrument Serif",serif;text-wrap:balance;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#artist{font-size:clamp(18px,1.8vw,24px);color:var(--ink);opacity:.86}
+#album{font-size:15px;color:var(--mute);font-style:italic;font-family:"Instrument Serif",serif;font-size:19px}
+#prog{margin-top:22px;max-width:520px}
+#bar{height:3px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
+#fill{height:100%;width:0;background:var(--ink);opacity:.85;transition:width 1s linear}
+#times{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--faint);font-variant-numeric:tabular-nums}
+.swap{transition:opacity .9s ease}
+.out{opacity:0}
+
+#idle{display:none;margin:auto;text-align:center}
+#idle p:first-child{font:italic 400 clamp(40px,6vw,80px)/1 "Instrument Serif",serif}
+#idle p:last-child{margin-top:14px;color:var(--mute)}
+body.idle #player{display:none} body.idle #idle{display:block}
+
+@media (orientation:portrait),(max-width:700px){
+  #player{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:36px}
+  #art{width:min(74vw,48vh)}
+  #meta{align-items:center} #prog{width:min(74vw,520px)}
+}
+
+/* ---------- setup ---------- */
+#setup{display:none;position:relative;z-index:3;margin:auto;max-width:560px;width:100%;
+  background:rgba(12,11,16,.55);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:32px;-webkit-user-select:text;user-select:text}
+body.setup #setup{display:block} body.setup #player,body.setup #idle{display:none}
+#setup h1{font:400 40px/1.05 "Instrument Serif",serif;margin-bottom:8px}
+#setup p,#setup li{color:var(--mute);font-size:15px}
+#setup ol{padding-left:20px;margin:16px 0;display:grid;gap:6px}
+#setup b{color:var(--ink);font-weight:500}
+.uri{display:flex;gap:8px;margin:6px 0 18px}
+.uri code{flex:1;padding:12px;border-radius:10px;background:rgba(255,255,255,.07);font-size:14px;overflow-wrap:anywhere}
+label{display:block;font-size:14px;color:var(--mute);margin-bottom:6px}
+input{width:100%;font:16px "Inter Tight",sans-serif;color:var(--ink);background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:12px;margin-bottom:16px}
+button{font:500 15px "Inter Tight",sans-serif;color:#111;background:var(--ink);border:0;border-radius:10px;
+  padding:12px 18px;min-height:44px;cursor:pointer}
+button.ghost{background:rgba(255,255,255,.1);color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+#err{color:#ffb4a8;font-size:14px;margin-top:12px;min-height:18px}
+
+#gear{position:fixed;z-index:4;right:max(16px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));
+  background:none;color:var(--faint);font-size:13px;padding:10px;opacity:.5}
+#hint{position:fixed;z-index:4;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);
+  font-size:13px;color:var(--faint);transition:opacity 1s}
+
+@media (prefers-reduced-motion:reduce){.blob,#art,#grain{animation:none!important}}
+</style>
+</head>
+<body class="idle">
+<div id="bg"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div></div>
+<div id="grain"></div><div id="vig"></div>
+
+<main>
+  <div id="clock"><span id="time">--:--</span><span id="date"></span></div>
+
+  <section id="player">
+    <div id="art"><img id="imgA" alt=""><img id="imgB" alt="" style="opacity:0"></div>
+    <div id="meta">
+      <div id="state"></div>
+      <div class="swap" id="txt">
+        <h1 id="title"></h1>
+        <div id="artist" style="margin-top:14px"></div>
+        <div id="album" style="margin-top:4px"></div>
+      </div>
+      <div id="prog"><div id="bar"><div id="fill"></div></div>
+        <div id="times"><span id="pos">0:00</span><span id="dur">0:00</span></div></div>
+    </div>
+  </section>
+
+  <section id="idle"><p>Gerade ist Stille.</p><p>Starte etwas auf Spotify, es erscheint hier automatisch.</p></section>
+
+  <section id="setup">
+    <h1>Einrichtung</h1>
+    <p>Einmalig nötig, danach merkt sich die Seite alles.</p>
+    <ol>
+      <li>Auf <b>developer.spotify.com/dashboard</b> einloggen und auf <b>Create app</b> klicken.</li>
+      <li>Name und Beschreibung frei wählen. Als <b>Redirect URI</b> genau diese Adresse eintragen:</li>
+    </ol>
+    <div class="uri"><code id="ruri"></code><button class="ghost" id="copy">Kopieren</button></div>
+    <ol start="3">
+      <li>Bei den APIs <b>Web API</b> anhaken, speichern und die <b>Client ID</b> kopieren.</li>
+    </ol>
+    <label for="cid">Client ID</label>
+    <input id="cid" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="z. B. 3f2a…">
+    <button id="login">Mit Spotify verbinden</button>
+    <div id="err"></div>
+  </section>
+</main>
+
+<button id="gear" title="Abmelden">abmelden</button>
+<div id="hint">Einmal tippen, damit der Bildschirm wach bleibt</div>
+
+<script>
+{
+const $ = id => document.getElementById(id);
+const store = {
+  get:k=>{try{return localStorage.getItem('np_'+k)}catch(e){return null}},
+  set:(k,v)=>{try{localStorage.setItem('np_'+k,v)}catch(e){}},
+  del:k=>{try{localStorage.removeItem('np_'+k)}catch(e){}}
+};
+const REDIRECT = location.origin + location.pathname;
+const SCOPES = 'user-read-currently-playing user-read-playback-state';
+
+/* ---------- clock ---------- */
+function tick(){
+  const d = new Date();
+  $('time').textContent = d.toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'});
+  $('date').textContent = d.toLocaleDateString('de-AT',{weekday:'long',day:'numeric',month:'long'});
+}
+tick(); setInterval(tick, 10000);
+
+/* ---------- wake lock ---------- */
+let lock = null;
+async function wake(){
+  try{ if('wakeLock' in navigator && !lock){ lock = await navigator.wakeLock.request('screen');
+    lock.addEventListener('release',()=>lock=null); $('hint').style.opacity=0; } }catch(e){}
+}
+document.addEventListener('click', wake);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') { wake(); poll(); } });
+setTimeout(()=>$('hint').style.opacity=0, 12000);
+
+/* ---------- PKCE auth ---------- */
+const b64url = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+function randomStr(n){ const a=new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a,x=>('0'+(x%36).toString(36)).slice(-1)).join(''); }
+
+async function login(){
+  const cid = $('cid').value.trim();
+  if(!cid){ $('err').textContent='Bitte zuerst die Client ID einfügen.'; return; }
+  store.set('cid', cid);
+  const verifier = randomStr(64);
+  store.set('verifier', verifier);
+  const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+  const p = new URLSearchParams({client_id:cid,response_type:'code',redirect_uri:REDIRECT,
+    code_challenge_method:'S256',code_challenge:challenge,scope:SCOPES});
+  location.href = 'https://accounts.spotify.com/authorize?' + p;
+}
+
+async function tokenRequest(body){
+  const r = await fetch('https://accounts.spotify.com/api/token',{method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(body)});
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error_description || j.error || 'Token-Fehler');
+  store.set('access', j.access_token);
+  store.set('expires', Date.now() + (j.expires_in-60)*1000);
+  if(j.refresh_token) store.set('refresh', j.refresh_token);
+}
+
+async function handleCallback(){
+  const q = new URLSearchParams(location.search);
+  if(q.get('error')){ history.replaceState(null,'',REDIRECT); showSetup('Spotify-Anmeldung abgebrochen: '+q.get('error')); return false; }
+  const code = q.get('code'); if(!code) return true;
+  history.replaceState(null,'',REDIRECT);
+  try{
+    await tokenRequest({grant_type:'authorization_code',code,redirect_uri:REDIRECT,
+      client_id:store.get('cid'),code_verifier:store.get('verifier')});
+    store.del('verifier'); return true;
+  }catch(e){ showSetup('Anmeldung fehlgeschlagen: '+e.message); return false; }
+}
+
+async function token(){
+  if(store.get('access') && Date.now() < +store.get('expires')) return store.get('access');
+  if(!store.get('refresh')) throw new Error('nologin');
+  await tokenRequest({grant_type:'refresh_token',refresh_token:store.get('refresh'),client_id:store.get('cid')});
+  return store.get('access');
+}
+
+function showSetup(msg){
+  document.body.className = 'setup';
+  $('ruri').textContent = REDIRECT;
+  $('cid').value = store.get('cid') || '';
+  $('err').textContent = msg || '';
+}
+$('copy').onclick = async () => { try{ await navigator.clipboard.writeText(REDIRECT); $('copy').textContent='Kopiert'; }catch(e){ $('copy').textContent='Bitte manuell kopieren'; } };
+$('login').onclick = login;
+$('gear').onclick = () => { ['access','refresh','expires'].forEach(store.del); showSetup(); };
+
+/* ---------- colours from cover ---------- */
+const DEFAULT = [[59,47,92],[122,78,110],[44,74,90]];
+function extract(img){
+  try{
+    const c = document.createElement('canvas'); c.width=c.height=28;
+    const x = c.getContext('2d'); x.drawImage(img,0,0,28,28);
+    const d = x.getImageData(0,0,28,28).data, buckets = {};
+    for(let i=0;i<d.length;i+=4){
+      const r=d[i],g=d[i+1],b=d[i+2], mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+      if(mx<28) continue;
+      const k=(r>>5)+','+(g>>5)+','+(b>>5), s=(mx-mn)/(mx||1);
+      const o = buckets[k] || (buckets[k]={r:0,g:0,b:0,n:0,s:0});
+      o.r+=r;o.g+=g;o.b+=b;o.n++;o.s+=s;
+    }
+    const list = Object.values(buckets).map(o=>({c:[o.r/o.n,o.g/o.n,o.b/o.n],w:o.n*(.35+o.s/o.n)})).sort((a,b)=>b.w-a.w);
+    const out=[];
+    for(const it of list){ if(out.every(c=>Math.hypot(c[0]-it.c[0],c[1]-it.c[1],c[2]-it.c[2])>60)) out.push(it.c); if(out.length===3) break; }
+    while(out.length<3) out.push((out[0]||DEFAULT[out.length]).map(v=>v*.6));
+    return out;
+  }catch(e){ return DEFAULT; }
+}
+function applyColours(cols){
+  const rgb = c => `rgb(${c.map(v=>Math.round(v)).join(',')})`;
+  const soft = c => c.map(v=>v*.8);           // keep it moody, not neon
+  const root = document.documentElement.style;
+  root.setProperty('--c1', rgb(soft(cols[0])));
+  root.setProperty('--c2', rgb(soft(cols[1])));
+  root.setProperty('--c3', rgb(soft(cols[2])));
+  root.setProperty('--base', rgb(cols[0].map(v=>v*.14+6)));
+}
+
+/* ---------- now playing ---------- */
+let cur = {id:null,progress:0,duration:0,playing:false,stamp:0}, front='imgA', timer=null;
+const fmt = ms => { const s=Math.max(0,Math.floor(ms/1000)); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+
+function setTrack(item){
+  const isEp = item.type==='episode';
+  const imgs = (isEp ? item.images : item.album?.images) || [];
+  const src = imgs[0]?.url;
+  $('txt').classList.add('out');
+  setTimeout(()=>{
+    $('title').textContent = item.name;
+    $('artist').textContent = isEp ? (item.show?.name||'') : item.artists.map(a=>a.name).join(', ');
+    $('album').textContent = isEp ? 'Podcast' : (item.album?.name||'');
+    $('txt').classList.remove('out');
+  }, 500);
+  if(!src) return;
+  const back = front==='imgA' ? 'imgB' : 'imgA', el = $(back);
+  el.crossOrigin = 'anonymous';
+  el.onload = () => { $(back).style.opacity=1; $(front).style.opacity=0; front=back; applyColours(extract(el)); };
+  el.onerror = () => { el.removeAttribute('crossorigin'); el.onload = () => { $(back).style.opacity=1; $(front).style.opacity=0; front=back; applyColours(DEFAULT); }; el.src = src; };
+  el.src = src;
+}
+
+function render(){
+  const p = cur.playing ? cur.progress + (Date.now()-cur.stamp) : cur.progress;
+  const pos = Math.min(p, cur.duration);
+  $('fill').style.width = (cur.duration ? pos/cur.duration*100 : 0) + '%';
+  $('pos').textContent = fmt(pos); $('dur').textContent = fmt(cur.duration);
+}
+setInterval(render, 1000);
+
+async function poll(){
+  clearTimeout(timer);
+  let wait = 3000;
+  try{
+    const t = await token();
+    const r = await fetch('https://api.spotify.com/v1/me/player/currently-playing?additional_types=track,episode',
+      {headers:{Authorization:'Bearer '+t}});
+    if(r.status===401){ store.del('access'); wait=500; }
+    else if(r.status===429){ wait = (+r.headers.get('Retry-After')||10)*1000; }
+    else if(r.status===204 || !r.ok){ document.body.className='idle'; cur.id=null; wait=6000; }
+    else{
+      const j = await r.json();
+      if(!j.item){ document.body.className='idle'; cur.id=null; }
+      else{
+        document.body.className = j.is_playing ? '' : 'paused';
+        $('state').textContent = j.is_playing ? '' : 'pausiert';
+        if(j.item.id !== cur.id){ cur.id = j.item.id; setTrack(j.item); }
+        cur.progress = j.progress_ms||0; cur.duration = j.item.duration_ms||0;
+        cur.playing = j.is_playing; cur.stamp = Date.now(); render();
+        if(!j.is_playing) wait = 5000;
+      }
+    }
+  }catch(e){
+    if(e.message==='nologin'){ showSetup(); return; }
+    if(/invalid|revoked|grant/i.test(e.message)){ ['access','refresh'].forEach(store.del); showSetup('Bitte neu verbinden.'); return; }
+    wait = 8000;                               // network hiccup, keep trying quietly
+  }
+  timer = setTimeout(poll, wait);
+}
+
+(async()=>{
+  if(!(await handleCallback())) return;
+  if(!store.get('refresh')){ showSetup(location.protocol==='file:' ? 'Die Seite muss über https laufen (z. B. GitHub Pages), nicht als lokale Datei.' : ''); return; }
+  poll(); wake();
+})();
+}
+</script>
+</body>
+</html>
