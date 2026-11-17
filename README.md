@@ -1,7 +1,7 @@
 # Now Playing
 
 Ein ruhiges Lo-Fi-Display für Spotify, gedacht fürs iPad am Schreibtisch.
-Großes Cover, langsam treibende Farbflächen in den Farben des Albums, leichtes Filmkorn, Uhrzeit und Datum.
+Großes Cover, langsam treibende Farbflächen in den Farben des Albums, leichtes Filmkorn und schlichte Typografie.
 
 Die Seite zeigt automatisch, was gerade auf deinem Spotify-Account läuft – egal ob am PC, Handy oder iPad.
 
